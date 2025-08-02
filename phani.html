@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Legal Document Analysis Application - Enhanced</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chat-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .floating-chat {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+        .review-item {
+            transition: all 0.3s ease;
+        }
+        .review-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .suggestion-tag {
+            display: inline-block;
+            margin: 2px;
+            padding: 4px 8px;
+            background: #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        .extract-option {
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .extract-option.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .share-button {
+            transition: all 0.3s ease;
+        }
+        .share-button:hover {
+            transform: scale(1.05);
+        }
+        @media print {
+            .floating-chat { display: none; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <i class="fas fa-balance-scale text-blue-600 text-2xl mr-3"></i>
+                    <h1 class="text-2xl font-bold text-gray-900">LegalAnalyzer Pro</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="shareBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-share-alt mr-2"></i>Share
+                    </button>
+                    <button id="chatToggle" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-robot mr-2"></i>AI Assistant
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Document Upload Section -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+                <i class="fas fa-upload text-blue-600 mr-2"></i>
+                Document Upload & Processing
+            </h2>
+            <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                <p class="text-lg text-gray-600 mb-2">Drop your legal documents here</p>
+                <p class="text-sm text-gray-500 mb-4">Supports PDF, DOC, DOCX, TXT files</p>
+                <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.txt" class="hidden">
+                <button onclick="document.getElementById('fileInput').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                    Select Files
+                </button>
+            </div>
+            <div id="fileList" class="mt-4"></div>
+        </div>
+
+        <!-- Extract Analysis Options -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+                <i class="fas fa-search text-purple-600 mr-2"></i>
+                Advanced Extract Analysis Options
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div class="extract-option p-4 rounded-lg border cursor-pointer" data-option="entities">
+                    <i class="fas fa-user-tie text-blue-600 mb-2"></i>
+                    <h3 class="font-medium">Legal Entities</h3>
+                    <p class="text-sm text-gray-600">Extract parties, organizations, and stakeholders</p>
+                </div>
+                <div class="extract-option p-4 rounded-lg border cursor-pointer" data-option="dates">
+                    <i class="fas fa-calendar text-green-600 mb-2"></i>
+                    <h3 class="font-medium">Key Dates</h3>
+                    <p class="text-sm text-gray-600">Identify deadlines, effective dates, and terms</p>
+                </div>
+                <div class="extract-option p-4 rounded-lg border cursor-pointer" data-option="clauses">
+                    <i class="fas fa-list-alt text-orange-600 mb-2"></i>
+                    <h3 class="font-medium">Contract Clauses</h3>
+                    <p class="text-sm text-gray-600">Analyze terms, conditions, and obligations</p>
+                </div>
+                <div class="extract-option p-4 rounded-lg border cursor-pointer" data-option="financial">
+                    <i class="fas fa-dollar-sign text-red-600 mb-2"></i>
+                    <h3 class="font-medium">Financial Terms</h3>
+                    <p class="text-sm text-gray-600">Extract amounts, payment terms, and penalties</p>
+                </div>
+                <div class="extract-option p-4 rounded-lg border cursor-pointer" data-option="risks">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 mb-2"></i>
+                    <h3 class="font-medium">Risk Factors</h3>
+                    <p class="text-sm text-gray-600">Identify potential legal and business risks</p>
+                </div>
+                <div class="extract-option p-4 rounded-lg border cursor-pointer" data-option="compliance">
+                    <i class="fas fa-shield-alt text-indigo-600 mb-2"></i>
+                    <h3 class="font-medium">Compliance Check</h3>
+                    <p class="text-sm text-gray-600">Verify regulatory and legal compliance</p>
+                </div>
+            </div>
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <button id="selectAll" class="text-blue-600 hover:text-blue-800 text-sm">Select All</button>
+                    <button id="clearAll" class="text-gray-600 hover:text-gray-800 text-sm">Clear All</button>
+                </div>
+                <button id="analyzeBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg flex items-center">
+                    <i class="fas fa-cogs mr-2"></i>Start Analysis
+                </button>
+            </div>
+        </div>
+
+        <!-- Analysis Results -->
+        <div id="analysisResults" class="hidden">
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+                <h2 class="text-xl font-semibold mb-6 flex items-center">
+                    <i class="fas fa-chart-bar text-green-600 mr-2"></i>
+                    Analysis Results & Visualizations
+                </h2>
+                
+                <div class="analysis-grid mb-8">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-medium mb-3 flex items-center">
+                            <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+                            Risk Assessment
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="riskChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-medium mb-3 flex items-center">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            Compliance Status
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="complianceChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-medium mb-3 flex items-center">
+                            <i class="fas fa-handshake text-blue-500 mr-2"></i>
+                            Contract Analysis
+                        </h3>
+                        <div class="chart-container">
+                            <canvas id="contractChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Extracted Information -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-medium mb-3">Key Findings</h3>
+                        <div id="keyFindings" class="space-y-2"></div>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-medium mb-3">Recommendations</h3>
+                        <div id="recommendations" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Suggestions and Review System -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+                <i class="fas fa-lightbulb text-yellow-600 mr-2"></i>
+                AI Suggestions & Community Reviews
+            </h2>
+            
+            <!-- AI Suggestions -->
+            <div class="mb-6">
+                <h3 class="font-medium mb-3">Smart Suggestions</h3>
+                <div id="aiSuggestions" class="bg-blue-50 rounded-lg p-4 mb-4">
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-robot text-blue-600 mt-1"></i>
+                        <div>
+                            <p class="text-sm text-gray-700 mb-2">Based on your document analysis, here are some AI-generated suggestions:</p>
+                            <div class="flex flex-wrap">
+                                <span class="suggestion-tag">Review termination clauses</span>
+                                <span class="suggestion-tag">Verify liability limits</span>
+                                <span class="suggestion-tag">Check compliance dates</span>
+                                <span class="suggestion-tag">Consider additional warranties</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Review System -->
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-medium">Community Reviews & Feedback</h3>
+                    <button id="addReviewBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-plus mr-1"></i>Add Review
+                    </button>
+                </div>
+                
+                <div id="reviewsList" class="space-y-4">
+                    <div class="review-item bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-center space-x-2">
+                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiM2MzY2RjEiLz4KPHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJjZW50cmFsIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZSIgZm9udC1zaXplPSIxNHB4IiBmb250LXdlaWdodD0iYm9sZCI+TUo8L3RleHQ+Cjwvc3ZnPgo=" alt="User" class="w-8 h-8 rounded-full">
+                                <div>
+                                    <p class="font-medium text-sm">Michael Johnson</p>
+                                    <p class="text-xs text-gray-500">Legal Consultant</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="flex text-yellow-400 mr-2">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <span class="text-sm text-gray-500">2 days ago</span>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-2">Excellent analysis tool! The risk assessment feature helped identify critical issues in our contract that we might have missed.</p>
+                        <div class="flex items-center space-x-4 text-sm text-gray-500">
+                            <button class="hover:text-blue-600"><i class="fas fa-thumbs-up mr-1"></i>12</button>
+                            <button class="hover:text-red-600"><i class="fas fa-thumbs-down mr-1"></i>0</button>
+                            <button class="hover:text-gray-700"><i class="fas fa-reply mr-1"></i>Reply</button>
+                        </div>
+                    </div>
+                    
+                    <div class="review-item bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-center space-x-2">
+                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNFRjQ0NDQiLz4KPHRleHQgeD0iNTAlIiB5PSI1MCUiIGRvbWluYW50LWJhc2VsaW5lPSJjZW50cmFsIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSJ3aGl0ZUZvbnQtc2l6ZT0iMTRweCIgZm9udC13ZWlnaHQ9ImJvbGQiPlNXPC90ZXh0Pgo8L3N2Zz4K" alt="User" class="w-8 h-8 rounded-full">
+                                <div>
+                                    <p class="font-medium text-sm">Sarah Wilson</p>
+                                    <p class="text-xs text-gray-500">Corporate Lawyer</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="flex text-yellow-400 mr-2">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="far fa-star"></i>
+                                </div>
+                                <span class="text-sm text-gray-500">5 days ago</span>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-2">The AI suggestions are particularly helpful. Would love to see more customization options for different types of legal documents.</p>
+                        <div class="flex items-center space-x-4 text-sm text-gray-500">
+                            <button class="hover:text-blue-600"><i class="fas fa-thumbs-up mr-1"></i>8</button>
+                            <button class="hover:text-red-600"><i class="fas fa-thumbs-down mr-1"></i>1</button>
+                            <button class="hover:text-gray-700"><i class="fas fa-reply mr-1"></i>Reply</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Options -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 flex items-center">
+                <i class="fas fa-download text-indigo-600 mr-2"></i>
+                Export & Share Options
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button id="exportJSON" class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-file-code text-blue-600 mr-2"></i>
+                    <span>Export as JSON</span>
+                </button>
+                <button id="exportReport" class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-file-alt text-green-600 mr-2"></i>
+                    <span>Generate Report</span>
+                </button>
+                <button id="shareAnalysis" class="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-share text-purple-600 mr-2"></i>
+                    <span>Share Analysis</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Floating AI Chat Bot -->
+    <div id="chatBot" class="floating-chat hidden no-print">
+        <div class="bg-white rounded-lg shadow-xl border w-80">
+            <div class="bg-blue-600 text-white p-4 rounded-t-lg flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-robot mr-2"></i>
+                    <span class="font-medium">Chart Bot Assistant</span>
+                </div>
+                <button id="closeChatBot" class="text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="chat-container p-4" id="chatMessages">
+                <div class="mb-3">
+                    <div class="bg-blue-100 rounded-lg p-3 text-sm">
+                        <i class="fas fa-robot text-blue-600 mr-2"></i>
+                        Hi! I'm your AI Chart Bot. I can help you analyze data, explain charts, and answer questions about your documents. Try asking me:
+                        <ul class="list-disc list-inside mt-2 text-xs">
+                            <li>"What are the main risk factors?"</li>
+                            <li>"Show compliance trends"</li>
+                            <li>"Explain the contract analysis"</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t">
+                <div class="flex space-x-2">
+                    <input type="text" id="chatInput" placeholder="Ask about your data..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                    <button id="sendMessage" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 no-print">
+        <div class="bg-white rounded-lg p-6 m-4 max-w-md w-full">
+            <h3 class="text-lg font-semibold mb-4">Share Analysis</h3>
+            <div class="space-y-3">
+                <button class="share-button w-full flex items-center justify-center p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <i class="fab fa-twitter mr-2"></i>Share on Twitter
+                </button>
+                <button class="share-button w-full flex items-center justify-center p-3 bg-blue-800 text-white rounded-lg hover:bg-blue-900">
+                    <i class="fab fa-linkedin mr-2"></i>Share on LinkedIn
+                </button>
+                <button class="share-button w-full flex items-center justify-center p-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-link mr-2"></i>Copy Link
+                </button>
+                <button class="share-button w-full flex items-center justify-center p-3 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="fas fa-envelope mr-2"></i>Share via Email
+                </button>
+            </div>
+            <button id="closeShareModal" class="mt-4 w-full p-2 text-gray-600 hover:text-gray-800">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Add Review Modal -->
+    <div id="addReviewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 no-print">
+        <div class="bg-white rounded-lg p-6 m-4 max-w-md w-full">
+            <h3 class="text-lg font-semibold mb-4">Add Your Review</h3>
+            <form id="reviewForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Rating</label>
+                    <div class="flex space-x-1" id="starRating">
+                        <i class="fas fa-star text-gray-300 cursor-pointer hover:text-yellow-400" data-rating="1"></i>
+                        <i class="fas fa-star text-gray-300 cursor-pointer hover:text-yellow-400" data-rating="2"></i>
+                        <i class="fas fa-star text-gray-300 cursor-pointer hover:text-yellow-400" data-rating="3"></i>
+                        <i class="fas fa-star text-gray-300 cursor-pointer hover:text-yellow-400" data-rating="4"></i>
+                        <i class="fas fa-star text-gray-300 cursor-pointer hover:text-yellow-400" data-rating="5"></i>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Your Name</label>
+                    <input type="text" id="reviewerName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="Enter your name">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Review</label>
+                    <textarea id="reviewText" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500" placeholder="Share your experience..."></textarea>
+                </div>
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">Submit Review</button>
+                    <button type="button" id="closeReviewModal" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 rounded-lg">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let uploadedFiles = [];
+        let analysisData = {};
+        let selectedExtractOptions = [];
+        let currentRating = 0;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            initializeExtractOptions();
+        });
+
+        // Event Listeners
+        function initializeEventListeners() {
+            // File upload
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+
+            dropZone.addEventListener('dragover', handleDragOver);
+            dropZone.addEventListener('drop', handleDrop);
+            fileInput.addEventListener('change', handleFileSelect);
+
+            // Analysis
+            document.getElementById('analyzeBtn').addEventListener('click', startAnalysis);
+            document.getElementById('selectAll').addEventListener('click', selectAllOptions);
+            document.getElementById('clearAll').addEventListener('click', clearAllOptions);
+
+            // Chat bot
+            document.getElementById('chatToggle').addEventListener('click', toggleChatBot);
+            document.getElementById('closeChatBot').addEventListener('click', closeChatBot);
+            document.getElementById('sendMessage').addEventListener('click', sendChatMessage);
+            document.getElementById('chatInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') sendChatMessage();
+            });
+
+            // Share functionality
+            document.getElementById('shareBtn').addEventListener('click', openShareModal);
+            document.getElementById('closeShareModal').addEventListener('click', closeShareModal);
+
+            // Review system
+            document.getElementById('addReviewBtn').addEventListener('click', openAddReviewModal);
+            document.getElementById('closeReviewModal').addEventListener('click', closeAddReviewModal);
+            document.getElementById('reviewForm').addEventListener('submit', submitReview);
+
+            // Star rating
+            document.querySelectorAll('#starRating i').forEach(star => {
+                star.addEventListener('click', setRating);
+                star.addEventListener('mouseover', highlightStars);
+            });
+
+            // Export functions
+            document.getElementById('exportJSON').addEventListener('click', exportJSON);
+            document.getElementById('exportReport').addEventListener('click', exportReport);
+            document.getElementById('shareAnalysis').addEventListener('click', shareAnalysis);
+        }
+
+        // File handling
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+            const files = Array.from(e.dataTransfer.files);
+            processFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            processFiles(files);
+        }
+
+        function processFiles(files) {
+            const validTypes = ['.pdf', '.doc', '.docx', '.txt'];
+            const validFiles = files.filter(file => {
+                const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                return validTypes.includes(extension);
+            });
+
+            uploadedFiles = [...uploadedFiles, ...validFiles];
+            displayFileList();
+        }
+
+        function displayFileList() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+
+            if (uploadedFiles.length === 0) return;
+
+            const container = document.createElement('div');
+            container.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+
+            uploadedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'flex items-center justify-between bg-gray-50 rounded-lg p-3';
+                fileItem.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-file-alt text-blue-600 mr-3"></i>
+                        <div>
+                            <p class="font-medium text-sm">${file.name}</p>
+                            <p class="text-xs text-gray-500">${(file.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                    </div>
+                    <button onclick="removeFile(${index})" class="text-red-500 hover:text-red-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(fileItem);
+            });
+
+            fileList.appendChild(container);
+        }
+
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            displayFileList();
+        }
+
+        // Extract options
+        function initializeExtractOptions() {
+            document.querySelectorAll('.extract-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    this.classList.toggle('selected');
+                    const optionType = this.dataset.option;
+                    
+                    if (selectedExtractOptions.includes(optionType)) {
+                        selectedExtractOptions = selectedExtractOptions.filter(opt => opt !== optionType);
+                    } else {
+                        selectedExtractOptions.push(optionType);
+                    }
+                });
+            });
+        }
+
+        function selectAllOptions() {
+            document.querySelectorAll('.extract-option').forEach(option => {
+                option.classList.add('selected');
+            });
+            selectedExtractOptions = ['entities', 'dates', 'clauses', 'financial', 'risks', 'compliance'];
+        }
+
+        function clearAllOptions() {
+            document.querySelectorAll('.extract-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            selectedExtractOptions = [];
+        }
+
+        // Analysis
+        function startAnalysis() {
+            if (uploadedFiles.length === 0) {
+                alert('Please upload at least one document.');
+                return;
+            }
+
+            if (selectedExtractOptions.length === 0) {
+                alert('Please select at least one analysis option.');
+                return;
+            }
+
+            // Show loading animation
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Analyzing...';
+            analyzeBtn.disabled = true;
+
+            // Simulate analysis
+            setTimeout(() => {
+                performAnalysis();
+                analyzeBtn.innerHTML = '<i class="fas fa-cogs mr-2"></i>Start Analysis';
+                analyzeBtn.disabled = false;
+            }, 3000);
+        }
+
+        function performAnalysis() {
+            // Generate mock analysis data
+            analysisData = {
+                risks: {
+                    high: Math.floor(Math.random() * 5) + 1,
+                    medium: Math.floor(Math.random() * 8) + 2,
+                    low: Math.floor(Math.random() * 10) + 3
+                },
+                compliance: {
+                    compliant: Math.floor(Math.random() * 15) + 10,
+                    nonCompliant: Math.floor(Math.random() * 5) + 1,
+                    pending: Math.floor(Math.random() * 3) + 1
+                },
+                contracts: {
+                    standard: Math.floor(Math.random() * 8) + 5,
+                    custom: Math.floor(Math.random() * 4) + 2,
+                    modified: Math.floor(Math.random() * 3) + 1
+                }
+            };
+
+            showAnalysisResults();
+            createCharts();
+            generateFindings();
+        }
+
+        function showAnalysisResults() {
+            document.getElementById('analysisResults').classList.remove('hidden');
+            document.getElementById('analysisResults').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function createCharts() {
+            // Risk Assessment Chart
+            const riskCtx = document.getElementById('riskChart').getContext('2d');
+            new Chart(riskCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+                    datasets: [{
+                        data: [analysisData.risks.high, analysisData.risks.medium, analysisData.risks.low],
+                        backgroundColor: ['#EF4444', '#F59E0B', '#10B981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Compliance Chart
+            const complianceCtx = document.getElementById('complianceChart').getContext('2d');
+            new Chart(complianceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Compliant', 'Non-Compliant', 'Pending Review'],
+                    datasets: [{
+                        data: [analysisData.compliance.compliant, analysisData.compliance.nonCompliant, analysisData.compliance.pending],
+                        backgroundColor: ['#10B981', '#EF4444', '#F59E0B'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Contract Analysis Chart
+            const contractCtx = document.getElementById('contractChart').getContext('2d');
+            new Chart(contractCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Standard Terms', 'Custom Clauses', 'Modified Sections'],
+                    datasets: [{
+                        data: [analysisData.contracts.standard, analysisData.contracts.custom, analysisData.contracts.modified],
+                        backgroundColor: ['#3B82F6', '#8B5CF6', '#06B6D4'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function generateFindings() {
+            const findings = [
+                { type: 'warning', text: 'High-risk clauses detected in liability section' },
+                { type: 'success', text: 'All regulatory compliance requirements met' },
+                { type: 'info', text: 'Contract terms within industry standards' },
+                { type: 'warning', text: 'Termination notice period may be insufficient' }
+            ];
+
+            const recommendations = [
+                { text: 'Review and strengthen liability limitations' },
+                { text: 'Consider adding additional warranty provisions' },
+                { text: 'Extend termination notice period to 30 days' },
+                { text: 'Include dispute resolution mechanisms' }
+            ];
+
+            displayFindings(findings, recommendations);
+        }
+
+        function displayFindings(findings, recommendations) {
+            const findingsContainer = document.getElementById('keyFindings');
+            const recommendationsContainer = document.getElementById('recommendations');
+
+            findingsContainer.innerHTML = '';
+            recommendationsContainer.innerHTML = '';
+
+            findings.forEach(finding => {
+                const item = document.createElement('div');
+                item.className = `flex items-center p-2 rounded ${getTypeClass(finding.type)}`;
+                item.innerHTML = `
+                    <i class="fas ${getTypeIcon(finding.type)} mr-2"></i>
+                    <span class="text-sm">${finding.text}</span>
+                `;
+                findingsContainer.appendChild(item);
+            });
+
+            recommendations.forEach(rec => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center p-2 bg-blue-50 rounded';
+                item.innerHTML = `
+                    <i class="fas fa-lightbulb text-blue-600 mr-2"></i>
+                    <span class="text-sm">${rec.text}</span>
+                `;
+                recommendationsContainer.appendChild(item);
+            });
+        }
+
+        function getTypeClass(type) {
+            const classes = {
+                warning: 'bg-yellow-50 text-yellow-800',
+                success: 'bg-green-50 text-green-800',
+                info: 'bg-blue-50 text-blue-800'
+            };
+            return classes[type] || 'bg-gray-50 text-gray-800';
+        }
+
+        function getTypeIcon(type) {
+            const icons = {
+                warning: 'fa-exclamation-triangle',
+                success: 'fa-check-circle',
+                info: 'fa-info-circle'
+            };
+            return icons[type] || 'fa-info-circle';
+        }
+
+        // Chat Bot functionality
+        function toggleChatBot() {
+            const chatBot = document.getElementById('chatBot');
+            chatBot.classList.toggle('hidden');
+        }
+
+        function closeChatBot() {
+            document.getElementById('chatBot').classList.add('hidden');
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            appendChatMessage('user', message);
+            input.value = '';
+
+            // Simulate AI response
+            setTimeout(() => {
+                const response = generateAIResponse(message);
+                appendChatMessage('bot', response);
+            }, 1000);
+        }
+
+        function appendChatMessage(sender, message) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'mb-3';
+
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="bg-blue-600 text-white rounded-lg p-3 text-sm ml-8">
+                        ${message}
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="bg-gray-100 rounded-lg p-3 text-sm mr-8">
+                        <i class="fas fa-robot text-blue-600 mr-2"></i>
+                        ${message}
+                    </div>
+                `;
+            }
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function generateAIResponse(message) {
+            const responses = {
+                'risk': 'Based on your analysis, I can see there are several risk factors. The highest risks are in the liability section. Would you like me to explain the specific risk categories?',
+                'compliance': 'Your documents show good compliance overall. Most requirements are met, with only minor items pending review. The compliance rate is above industry average.',
+                'contract': 'The contract analysis shows a good mix of standard and custom terms. The modified sections appear to be within normal parameters for this type of agreement.',
+                'chart': 'I can help you understand any of the charts in your analysis. Which specific chart would you like me to explain in detail?',
+                'default': 'I can help you analyze your data, explain charts, or answer questions about your documents. Try asking about risks, compliance, or contract terms!'
+            };
+
+            const lowerMessage = message.toLowerCase();
+            for (const [key, response] of Object.entries(responses)) {
+                if (lowerMessage.includes(key)) {
+                    return response;
+                }
+            }
+            return responses.default;
+        }
+
+        // Share functionality
+        function openShareModal() {
+            document.getElementById('shareModal').classList.remove('hidden');
+            document.getElementById('shareModal').classList.add('flex');
+        }
+
+        function closeShareModal() {
+            document.getElementById('shareModal').classList.add('hidden');
+            document.getElementById('shareModal').classList.remove('flex');
+        }
+
+        // Review system
+        function openAddReviewModal() {
+            document.getElementById('addReviewModal').classList.remove('hidden');
+            document.getElementById('addReviewModal').classList.add('flex');
+        }
+
+        function closeAddReviewModal() {
+            document.getElementById('addReviewModal').classList.add('hidden');
+            document.getElementById('addReviewModal').classList.remove('flex');
+            resetReviewForm();
+        }
+
+        function setRating(e) {
+            const rating = parseInt(e.target.dataset.rating);
+            currentRating = rating;
+            updateStarDisplay();
+        }
+
+        function highlightStars(e) {
+            const rating = parseInt(e.target.dataset.rating);
+            const stars = document.querySelectorAll('#starRating i');
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.remove('text-gray-300');
+                    star.classList.add('text-yellow-400');
+                } else {
+                    star.classList.remove('text-yellow-400');
+                    star.classList.add('text-gray-300');
+                }
+            });
+        }
+
+        function updateStarDisplay() {
+            const stars = document.querySelectorAll('#starRating i');
+            stars.forEach((star, index) => {
+                if (index < currentRating) {
+                    star.classList.remove('text-gray-300');
+                    star.classList.add('text-yellow-400');
+                } else {
+                    star.classList.remove('text-yellow-400');
+                    star.classList.add('text-gray-300');
+                }
+            });
+        }
+
+        function submitReview(e) {
+            e.preventDefault();
+            const name = document.getElementById('reviewerName').value;
+            const text = document.getElementById('reviewText').value;
+
+            if (!name || !text || currentRating === 0) {
+                alert('Please fill in all fields and provide a rating.');
+                return;
+            }
+
+            addReviewToList(name, text, currentRating);
+            closeAddReviewModal();
+        }
+
+        function addReviewToList(name, text, rating) {
+            const reviewsList = document.getElementById('reviewsList');
+            const reviewDiv = document.createElement('div');
+            reviewDiv.className = 'review-item bg-gray-50 rounded-lg p-4';
+
+            const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+            const starsHtml = Array.from({length: 5}, (_, i) => 
+                `<i class="fas fa-star ${i < rating ? 'text-yellow-400' : 'text-gray-300'}"></i>`
+            ).join('');
+
+            reviewDiv.innerHTML = `
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            ${initials}
+                        </div>
+                        <div>
+                            <p class="font-medium text-sm">${name}</p>
+                            <p class="text-xs text-gray-500">Just now</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="flex mr-2">
+                            ${starsHtml}
+                        </div>
+                        <span class="text-sm text-gray-500">Just now</span>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-700 mb-2">${text}</p>
+                <div class="flex items-center space-x-4 text-sm text-gray-500">
+                    <button class="hover:text-blue-600"><i class="fas fa-thumbs-up mr-1"></i>0</button>
+                    <button class="hover:text-red-600"><i class="fas fa-thumbs-down mr-1"></i>0</button>
+                    <button class="hover:text-gray-700"><i class="fas fa-reply mr-1"></i>Reply</button>
+                </div>
+            `;
+
+            reviewsList.insertBefore(reviewDiv, reviewsList.firstChild);
+        }
+
+        function resetReviewForm() {
+            document.getElementById('reviewerName').value = '';
+            document.getElementById('reviewText').value = '';
+            currentRating = 0;
+            updateStarDisplay();
+        }
+
+        // Export functions
+        function exportJSON() {
+            const data = {
+                analysisData,
+                uploadedFiles: uploadedFiles.map(f => ({ name: f.name, size: f.size })),
+                selectedOptions: selectedExtractOptions,
+                timestamp: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'legal-analysis-data.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportReport() {
+            const reportContent = generateReportContent();
+            const blob = new Blob([reportContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'legal-analysis-report.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function generateReportContent() {
+            return `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Legal Document Analysis Report</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 40px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .section { margin-bottom: 30px; }
+                        .chart-placeholder { background: #f0f0f0; height: 200px; margin: 20px 0; display: flex; align-items: center; justify-content: center; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>Legal Document Analysis Report</h1>
+                        <p>Generated on ${new Date().toLocaleDateString()}</p>
+                    </div>
+                    <div class="section">
+                        <h2>Analysis Summary</h2>
+                        <p>Risk Assessment: ${analysisData.risks?.high || 0} high, ${analysisData.risks?.medium || 0} medium, ${analysisData.risks?.low || 0} low</p>
+                        <p>Compliance Status: ${analysisData.compliance?.compliant || 0} compliant items</p>
+                    </div>
+                    <div class="section">
+                        <h2>Recommendations</h2>
+                        <ul>
+                            <li>Review high-risk clauses</li>
+                            <li>Strengthen liability limitations</li>
+                            <li>Consider additional warranties</li>
+                        </ul>
+                    </div>
+                </body>
+                </html>
+            `;
+        }
+
+        function shareAnalysis() {
+            const shareData = {
+                title: 'Legal Document Analysis Results',
+                text: 'Check out my legal document analysis results from LegalAnalyzer Pro',
+                url: window.location.href
+            };
+
+            if (navigator.share) {
+                navigator.share(shareData);
+            } else {
+                // Fallback to copying link
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    alert('Analysis link copied to clipboard!');
+                });
+            }
+        }
+    </script>
+</body>
+</html>
